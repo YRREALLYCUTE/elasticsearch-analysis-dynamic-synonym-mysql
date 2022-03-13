@@ -149,11 +149,13 @@ public class RemoteSynonymFile implements SynonymFile {
                         .getEntity().getContent(), charset));
                 StringBuilder sb = new StringBuilder();
                 String line;
+                int count = 0;
                 while ((line = br.readLine()) != null) {
-                    logger.info("reload remote synonym: {}", line);
+                    count++;
                     sb.append(line)
                             .append(System.getProperty("line.separator"));
                 }
+                logger.info("reload {} lines", count);
                 reader = new StringReader(sb.toString());
             } else {
                 reader = new StringReader("");
