@@ -55,6 +55,7 @@ public class DynamicSynonymTokenFilterFactory extends
     public String dbPass;
     public String dbTable;
     public String type;
+    public String style;
 
     private final boolean expand;
     private final boolean lenient;
@@ -78,6 +79,7 @@ public class DynamicSynonymTokenFilterFactory extends
         this.dbUser = settings.get("db_user");
         this.dbPass = settings.get("db_pass");
         this.type = settings.get("dic_type");
+        this.style = settings.get("dic_style");
 
         if (this.location == null && this.url == null) {
             throw new IllegalArgumentException(
@@ -182,7 +184,7 @@ public class DynamicSynonymTokenFilterFactory extends
             SynonymFile synonymFile;
             if (location == null) {
                 synonymFile = new SynonymDb(
-                  environment, analyzer, expand, lenient, format, url, dbUser, dbPass, dbTable, type
+                  environment, analyzer, expand, lenient, format, url, dbUser, dbPass, dbTable, type, style
                 );
             } else if (location.startsWith("http://") || location.startsWith("https://")) {
                 synonymFile = new RemoteSynonymFile(

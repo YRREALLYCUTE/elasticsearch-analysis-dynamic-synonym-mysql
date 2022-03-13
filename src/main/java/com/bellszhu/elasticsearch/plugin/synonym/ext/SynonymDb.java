@@ -49,6 +49,7 @@ public class SynonymDb implements SynonymFile {
     public String dbPass;
     public String dbTable;
     public String type;
+    public String style;
 
     private Connection connection;
     public Map<String, Date> lastImportTime = new HashMap<>();
@@ -69,7 +70,7 @@ public class SynonymDb implements SynonymFile {
 
     public SynonymDb(Environment env, Analyzer analyzer, boolean expand, boolean lenient,
               String format, String url, String dbUser, String dbPwd, String dbTable,
-              String type) {
+              String type, String style) {
         this.env = env;
         this.analyzer = analyzer;
         this.expand = expand;
@@ -86,6 +87,7 @@ public class SynonymDb implements SynonymFile {
             this.type = type;
         }
 
+        this.style = style;
     }
 
     @Override
@@ -107,24 +109,30 @@ public class SynonymDb implements SynonymFile {
     @Override
     public boolean isNeedReloadSynonymMap() {
         // 检测 lastModifyTime 是否比对应记录的时间小
-        if (lastImportTime.containsKey(type)) {
-            Date last = getLastModifyTime(type);
-            if (last.getTime() > lastImportTime.get(type).getTime()) {
-                lastImportTime.put(type, last);
+        String key = style + ":" + type;
+        if (lastImportTime.containsKey(key)) {
+            Date last = getLastModifyTime(key);
+            if (last.getTime() > lastImportTime.get(key).getTime()) {
+                lastImportTime.put(key, last);
                 return true;
             } else {
                 return false;
             }
         } else {
-            lastImportTime.put(type, new Date(0));
+            lastImportTime.put(key, new Date(0));
             return false;
         }
     }
 
     @Override
     public Reader getReader() {
+        List<String> data;
         // 从数据库中查询出关键词，并使用 ‘,’ 拼接
-        List<String> data = getWords(type);
+        if ("multi_line".equals(style)) {
+            data = getWords();
+        } else {
+            data = getWords(type);
+        }
         StringBuilder sb = new StringBuilder();
         for (String s : data) {
             sb.append(s).append(System.getProperty("line.separator"));
@@ -161,7 +169,7 @@ public class SynonymDb implements SynonymFile {
     }
 
     /**
-     * 获取同义词表
+     * 获取同义词表 方式1
      * @param type 同义词的类型
      * @return list
      */
@@ -184,6 +192,62 @@ public class SynonymDb implements SynonymFile {
                 if (words != null && !"".equals(words)) {
                     data.add(words);
                 }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (ps != null) {
+                    ps.close();
+                }
+                if (rs != null) {
+                    rs.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return data;
+    }
+
+    /**
+     * 获取同义词表 方式2
+     */
+    public List<String> getWords() {
+        connection = getConnection();
+        List<String> data = new ArrayList<>();
+        HashMap<String, List<String>> map = new HashMap<>();
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+            StringBuilder sql = new StringBuilder("select * from " + dbTable + " where in_use = 1 and status = 0");
+            logger.log(Level.INFO, "sql==={}", sql.toString());
+            ps = connection.prepareStatement(sql.toString());
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                String keyword = rs.getString("keyword");
+                String mainWord = rs.getString("main_word");
+                if (keyword != null && !"".equals(keyword)) {
+                    if (map.containsKey(mainWord)) {
+                        map.get(mainWord).add(keyword);
+                    } else {
+                        List<String> keywordList = new ArrayList<>();
+                        keywordList.add(keyword);
+                        map.put(mainWord, keywordList);
+                    }
+                }
+            }
+            for (String s : map.keySet()) {
+                StringBuilder sb = new StringBuilder();
+                for (String word : map.get(s)) {
+                    sb.append(",").append(word);
+                }
+                data.add(sb.toString().replaceFirst(",", ""));
             }
         } catch (Exception e) {
             e.printStackTrace();
