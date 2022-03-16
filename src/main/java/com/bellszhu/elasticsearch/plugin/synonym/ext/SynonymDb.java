@@ -87,7 +87,11 @@ public class SynonymDb implements SynonymFile {
             this.type = type;
         }
 
-        this.style = style;
+        if(style == null || "".equals(style)) {
+            this.style = "inline";
+        } else {
+            this.style = style;
+        }
     }
 
     @Override
@@ -129,9 +133,9 @@ public class SynonymDb implements SynonymFile {
         List<String> data;
         // 从数据库中查询出关键词，并使用 ‘,’ 拼接
         if ("multi_line".equals(style)) {
-            data = getWords();
+            data = getWordsMultiline(type);
         } else {
-            data = getWords(type);
+            data = getWordsInline(type);
         }
         StringBuilder sb = new StringBuilder();
         for (String s : data) {
@@ -173,7 +177,7 @@ public class SynonymDb implements SynonymFile {
      * @param type 同义词的类型
      * @return list
      */
-    public List<String> getWords(String type) {
+    public List<String> getWordsInline(String type) {
         connection = getConnection();
         List<String> data = new ArrayList<>();
         PreparedStatement ps = null;
@@ -217,7 +221,7 @@ public class SynonymDb implements SynonymFile {
     /**
      * 获取同义词表 方式2
      */
-    public List<String> getWords() {
+    public List<String> getWordsMultiline(String type) {
         connection = getConnection();
         List<String> data = new ArrayList<>();
         HashMap<String, List<String>> map = new HashMap<>();
@@ -226,6 +230,9 @@ public class SynonymDb implements SynonymFile {
 
         try {
             StringBuilder sql = new StringBuilder("select * from " + dbTable + " where in_use = 1 and status = 0");
+            if (!"all".equals(type)) {
+                sql.append(" and type = '").append(type).append("'");
+            }
             logger.log(Level.INFO, "sql==={}", sql.toString());
             ps = connection.prepareStatement(sql.toString());
             rs = ps.executeQuery();
@@ -332,7 +339,7 @@ public class SynonymDb implements SynonymFile {
 
     public static void main(String[] args) {
         SynonymDb db = new SynonymDb();
-        List<String> extWords=db.getWords("test");
+        List<String> extWords=db.getWordsInline("test");
         System.out.println(extWords);
 
         Date max = db.getLastModifyTime("test");
