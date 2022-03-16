@@ -115,7 +115,7 @@ public class SynonymDb implements SynonymFile {
         // 检测 lastModifyTime 是否比对应记录的时间小
         String key = style + ":" + type;
         if (lastImportTime.containsKey(key)) {
-            Date last = getLastModifyTime(key);
+            Date last = getLastModifyTime(type);
             if (last.getTime() > lastImportTime.get(key).getTime()) {
                 lastImportTime.put(key, last);
                 return true;
