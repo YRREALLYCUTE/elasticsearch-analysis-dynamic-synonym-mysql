@@ -184,7 +184,7 @@ public class SynonymDb implements SynonymFile {
         ResultSet rs = null;
 
         try {
-            StringBuilder sql = new StringBuilder("select * from " + dbTable + " where status = 0");
+            StringBuilder sql = new StringBuilder("select * from " + dbTable + " where status = 1");
             if (!"all".equals(type)) {
                 sql.append(" and type = '").append(type).append("'");
             }
@@ -229,7 +229,7 @@ public class SynonymDb implements SynonymFile {
         ResultSet rs = null;
 
         try {
-            StringBuilder sql = new StringBuilder("select * from " + dbTable + " where in_use = 1 and status = 0");
+            StringBuilder sql = new StringBuilder("select * from " + dbTable + " where in_use = 1 and status = 1");
             if (!"all".equals(type)) {
                 sql.append(" and type = '").append(type).append("'");
             }
@@ -289,7 +289,7 @@ public class SynonymDb implements SynonymFile {
         Date rt = null;
 
         try {
-            StringBuilder sql = new StringBuilder("select max(update_time) as update_time from " + dbTable + " where status = 0");
+            StringBuilder sql = new StringBuilder("select max(update_time) as update_time from " + dbTable + " where status = 1");
             if (!"all".equals(type)) {
                 sql.append(" and type = '").append(type).append("'");
             }
